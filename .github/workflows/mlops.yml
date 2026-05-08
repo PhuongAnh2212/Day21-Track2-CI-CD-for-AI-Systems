@@ -47,12 +47,21 @@ jobs:
 
       - name: Authenticate to Cloud Storage
         run: |
-          echo '${{ secrets.CLOUD_CREDENTIALS }}' > /tmp/sa-key.json
+          cat > /tmp/sa-key.json <<'EOF'
+          ${{ secrets.CLOUD_CREDENTIALS }}
+          EOF
+          chmod 600 /tmp/sa-key.json
+          python -m json.tool /tmp/sa-key.json > /dev/null
           echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json" >> $GITHUB_ENV
+          gcloud auth activate-service-account --key-file=/tmp/sa-key.json
+
+      - name: Configure DVC GCS credentials
+        run: |
+          dvc remote modify myremote credentialpath /tmp/sa-key.json
 
       - name: Pull data with DVC
         run: |
-          dvc pull data/train_phase1.csv.dvc data/eval.csv.dvc
+          dvc pull data/train_phase1.csv.dvc data/eval.csv.dvc -v
 
       - name: Train model
         run: python src/train.py
@@ -65,6 +74,8 @@ jobs:
           echo "Accuracy: $ACCURACY"
 
       - name: Upload model to Cloud Storage
+        env:
+          CLOUD_BUCKET: ${{ secrets.CLOUD_BUCKET }}
         run: |
           python - <<'EOF'
           import os
@@ -81,8 +92,6 @@ jobs:
 
           print(f"Uploaded {source_file} to gs://{bucket_name}/{destination_blob}")
           EOF
-        env:
-          CLOUD_BUCKET: ${{ secrets.CLOUD_BUCKET }}
 
       - name: Save metrics as artifact
         uses: actions/upload-artifact@v4
