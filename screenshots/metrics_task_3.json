@@ -1,0 +1,5 @@
+{
+  "accuracy": 0.758,
+  "f1_score": 0.7571894855356628,
+  "passed_threshold": true
+}
