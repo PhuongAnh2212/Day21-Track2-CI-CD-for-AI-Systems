@@ -38,8 +38,11 @@ def train(
 
         # TODO 4: Khoi tao va huan luyen RandomForestClassifier
         model = RandomForestClassifier(
-            **params,
-            random_state=42
+            n_estimators=params["n_estimators"],
+            max_depth=params["max_depth"],
+            min_samples_split=params["min_samples_split"],
+            min_samples_leaf=params["min_samples_leaf"],
+            random_state=params["random_state"],
         )
         model.fit(X_train, y_train)
 
