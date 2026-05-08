@@ -132,12 +132,22 @@ jobs:
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
             sudo systemctl restart mlops-serve
-            sleep 5
 
-            if ! curl -fsS http://localhost:8000/health; then
-              echo "Health check failed"
-              sudo journalctl -u mlops-serve -n 50 --no-pager
-              exit 1
+            echo "Waiting for server startup..."
+
+            for i in {1..12}; do
+              if curl -fsS http://localhost:8000/health; then
+                echo "Health check passed"
+                exit 0
+              fi
+
+              echo "Retry $i..."
+              sleep 5
+            done
+
+            echo "Health check failed"
+            sudo journalctl -u mlops-serve -n 50 --no-pager
+            exit 1
             fi
 
             echo "Deploy successful"
